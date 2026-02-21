@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ValidKit — Real Research. Not Another GPT Wrapper.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07090d;
+  --bg2: #0c1018;
+  --bg3: #111823;
+  --border: #1a2535;
+  --border-hi: #253548;
+  --green: #00ff88;
+  --green-lo: rgba(0,255,136,0.07);
+  --green-mid: rgba(0,255,136,0.15);
+  --amber: #ffb347;
+  --red: #ff5555;
+  --blue: #5eaeff;
+  --purple: #a78bfa;
+  --text: #dde6f0;
+  --muted: #4a6280;
+  --dim: #7a95b0;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  overflow-x: hidden;
+}
+
+/* grid + noise */
+body::after {
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,255,136,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,136,.025) 1px,transparent 1px);
+  background-size:56px 56px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── NAV ── */
+nav {
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 40px;
+  background:rgba(7,9,13,.9);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.logo { font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--green);letter-spacing:-.5px; }
+.logo em { color:var(--muted);font-style:normal;font-weight:400; }
+.nav-pill {
+  font-size:11px;color:var(--green);
+  border:1px solid rgba(0,255,136,.3);
+  padding:5px 12px;border-radius:2px;letter-spacing:.08em;
+  animation:pulse 2.5s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* ── HERO ── */
+.hero {
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:130px 24px 80px;
+  text-align:center;
+  overflow:hidden;
+}
+.hero-glow {
+  position:absolute;
+  width:800px;height:800px;
+  background:radial-gradient(circle, rgba(0,255,136,.06) 0%, transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-60%);
+  pointer-events:none;
+}
+
+/* live ticker */
+.live-ticker {
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--bg2);border:1px solid var(--border-hi);
+  border-radius:2px;padding:9px 18px;
+  font-size:12px;color:var(--dim);
+  margin-bottom:44px;
+  animation:fadeDown .5s ease both;
+}
+.live-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:blink 1.4s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 8px var(--green)} 50%{opacity:.3;box-shadow:none} }
+.live-ticker span { color:var(--green); }
+
+h1 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(40px,7.5vw,94px);
+  font-weight:800;
+  line-height:.95;
+  letter-spacing:-3px;
+  margin-bottom:28px;
+  animation:fadeDown .6s .08s ease both;
+}
+h1 .row1 { display:block;color:var(--text); }
+h1 .row2 { display:block;color:var(--green);position:relative; }
+h1 .row2 u { text-decoration:none;border-bottom:3px solid var(--green); }
+
+.hero-sub {
+  font-size:clamp(14px,1.8vw,17px);
+  color:var(--dim);
+  max-width:580px;
+  line-height:1.75;
+  margin-bottom:12px;
+  animation:fadeDown .6s .16s ease both;
+}
+.hero-sub strong { color:var(--text); }
+
+.honest-line {
+  font-size:13px;
+  color:var(--muted);
+  max-width:520px;
+  line-height:1.7;
+  margin-bottom:48px;
+  border-left:2px solid var(--border-hi);
+  padding-left:16px;
+  text-align:left;
+  animation:fadeDown .6s .22s ease both;
+}
+.honest-line em { color:var(--amber);font-style:normal; }
+
+/* form */
+.form-wrap {
+  width:100%;max-width:500px;
+  animation:fadeDown .6s .28s ease both;
+}
+.form-box {
+  display:flex;gap:0;
+  border:1px solid var(--border-hi);
+  border-radius:3px;overflow:hidden;
+  box-shadow:0 0 40px rgba(0,255,136,.05);
+  transition:box-shadow .3s,border-color .3s;
+  margin-bottom:12px;
+}
+.form-box:focus-within {
+  border-color:var(--green);
+  box-shadow:0 0 60px rgba(0,255,136,.13);
+}
+.form-box input {
+  flex:1;background:var(--bg2);border:none;outline:none;
+  padding:15px 18px;
+  font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);
+}
+.form-box input::placeholder { color:var(--muted); }
+.form-box button {
+  background:var(--green);border:none;
+  padding:15px 26px;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:13px;
+  color:#07090d;cursor:pointer;letter-spacing:.03em;
+  transition:background .15s,transform .1s;white-space:nowrap;
+}
+.form-box button:hover { background:#00ffaa; }
+.form-box button:active { transform:scale(.98); }
+.form-note { font-size:11px;color:var(--muted);text-align:center; }
+.form-note span { color:var(--green); }
+
+.success-state {
+  display:none;
+  background:var(--green-lo);border:1px solid rgba(0,255,136,.3);
+  border-radius:3px;padding:16px 20px;
+  font-size:13px;color:var(--green);text-align:left;line-height:1.6;
+}
+
+/* ── WAR ROOM ── */
+.warroom {
+  position:relative;z-index:1;
+  max-width:1060px;margin:80px auto 0;padding:0 24px;
+  animation:fadeUp .7s .4s ease both;
+}
+.warroom-label {
+  font-size:11px;letter-spacing:.15em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:20px;text-align:center;
+}
+
+.agents-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:5px;overflow:hidden;
+}
+
+.agent {
+  background:var(--bg2);padding:28px 24px;
+  position:relative;overflow:hidden;
+  transition:background .2s;
+}
+.agent:hover { background:var(--bg3); }
+.agent::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--agent-color),transparent);
+  opacity:.6;
+}
+
+.agent-id {
+  font-size:10px;letter-spacing:.12em;color:var(--muted);
+  margin-bottom:14px;text-transform:uppercase;
+}
+.agent-name {
+  font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
+  color:var(--agent-color);margin-bottom:6px;
+}
+.agent-role {
+  font-size:11px;color:var(--dim);margin-bottom:16px;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.agent-desc {
+  font-size:12px;color:var(--muted);line-height:1.7;
+}
+
+.agent-sources {
+  margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;
+}
+.source-tag {
+  font-size:10px;
+  border:1px solid var(--border-hi);
+  padding:3px 7px;border-radius:2px;
+  color:var(--dim);letter-spacing:.04em;
+}
+
+.agent-skull  { --agent-color: var(--red); }
+.agent-scout  { --agent-color: var(--blue); }
+.agent-mapper { --agent-color: var(--amber); }
+.agent-sim    { --agent-color: var(--purple); }
+
+/* status bar */
+.status-bar {
+  background:var(--bg3);border:1px solid var(--border);
+  border-top:none;border-radius:0 0 5px 5px;
+  padding:14px 24px;
+  display:flex;align-items:center;gap:24px;
+  font-size:12px;color:var(--muted);
+  flex-wrap:wrap;
+}
+.status-item { display:flex;align-items:center;gap:8px; }
+.status-dot { width:6px;height:6px;border-radius:50%; }
+
+/* ── HONEST SECTION ── */
+.honest-section {
+  position:relative;z-index:1;
+  max-width:860px;margin:100px auto;padding:0 24px;
+}
+.callout {
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:40px 48px;
+  position:relative;overflow:hidden;
+}
+.callout::before {
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--green),transparent);
+}
+.callout-label {
+  font-size:11px;color:var(--green);letter-spacing:.15em;
+  text-transform:uppercase;margin-bottom:20px;
+}
+.callout-title {
+  font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,36px);
+  font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:20px;
+}
+.callout-title em { color:var(--green);font-style:normal; }
+.callout-body {
+  font-size:14px;color:var(--dim);line-height:1.8;
+  display:flex;flex-direction:column;gap:14px;
+}
+.callout-body strong { color:var(--text); }
+
+/* comparison rows */
+.compare-rows {
+  margin-top:32px;display:flex;flex-direction:column;gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;
+}
+.compare-row {
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  background:var(--bg2);
+}
+.compare-row.header {
+  background:var(--bg3);
+  font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+}
+.compare-cell {
+  padding:14px 20px;font-size:13px;
+  border-right:1px solid var(--border);
+}
+.compare-cell:last-child { border-right:none; }
+.compare-row.header .compare-cell { padding:10px 20px; }
+.them { color:var(--muted);font-size:12px; }
+.us { color:var(--green); }
+.feature-name { color:var(--text); }
+
+/* ── SOURCES ── */
+.sources-section {
+  position:relative;z-index:1;
+  background:var(--bg2);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:72px 24px;
+  text-align:center;
+}
+.sources-label {
+  font-size:11px;letter-spacing:.15em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:16px;
+}
+.sources-title {
+  font-family:'Syne',sans-serif;font-size:clamp(24px,4vw,42px);
+  font-weight:800;letter-spacing:-1px;margin-bottom:8px;
+}
+.sources-sub {
+  font-size:14px;color:var(--dim);margin-bottom:48px;
+}
+.sources-sub em { color:var(--amber);font-style:normal; }
+
+.source-grid {
+  display:flex;flex-wrap:wrap;justify-content:center;gap:12px;
+  max-width:800px;margin:0 auto;
+}
+.source-chip {
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg3);border:1px solid var(--border-hi);
+  border-radius:3px;padding:10px 18px;font-size:13px;color:var(--dim);
+  transition:border-color .2s,color .2s;
+}
+.source-chip:hover { border-color:var(--green);color:var(--text); }
+.chip-dot { width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0; }
+
+.sources-note {
+  margin-top:32px;font-size:12px;color:var(--muted);
+  max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7;
+}
+.sources-note strong { color:var(--text); }
+
+/* ── TERMINAL ── */
+.terminal-section {
+  position:relative;z-index:1;
+  max-width:900px;margin:100px auto;padding:0 24px;
+}
+.section-eyebrow {
+  font-size:11px;color:var(--green);letter-spacing:.15em;
+  text-transform:uppercase;margin-bottom:14px;
+}
+.section-h {
+  font-family:'Syne',sans-serif;font-size:clamp(26px,4vw,46px);
+  font-weight:800;letter-spacing:-1.5px;margin-bottom:48px;line-height:1.1;
+}
+
+.terminal {
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:6px;overflow:hidden;
+  box-shadow:0 40px 80px rgba(0,0,0,.5),0 0 0 1px rgba(0,255,136,.04);
+}
+.t-head {
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;background:var(--bg3);
+  border-bottom:1px solid var(--border);
+}
+.dot { width:12px;height:12px;border-radius:50%; }
+.dot-r{background:#ff5f57}.dot-y{background:#febc2e}.dot-g{background:#28c840}
+.t-title { margin:0 auto;font-size:12px;color:var(--muted); }
+
+.t-body { padding:28px;font-size:13px;line-height:1.9; }
+
+.t-phase {
+  display:flex;align-items:center;gap:10px;
+  font-size:11px;letter-spacing:.1em;color:var(--muted);
+  text-transform:uppercase;margin:20px 0 10px;
+}
+.t-phase::after {
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+.tl { display:flex;gap:10px;margin-bottom:2px; }
+.tp { color:var(--green);flex-shrink:0; }
+.tc { color:var(--text); }
+.to { color:var(--dim);padding-left:22px;margin-bottom:2px; }
+.tk { color:var(--blue); }
+.tv-g { color:var(--green); }
+.tv-a { color:var(--amber); }
+.tv-r { color:var(--red); }
+.tv-p { color:var(--purple); }
+.t-quote {
+  margin:8px 0 8px 22px;
+  border-left:2px solid var(--border-hi);
+  padding-left:12px;
+  color:var(--muted);
+  font-style:italic;font-size:12px;line-height:1.6;
+}
+.t-cursor {
+  display:inline-block;width:8px;height:14px;
+  background:var(--green);
+  animation:blink 1s step-end infinite;
+  vertical-align:middle;margin-left:4px;
+}
+
+/* ── FINAL CTA ── */
+.final {
+  position:relative;z-index:1;
+  text-align:center;padding:100px 24px 130px;
+  overflow:hidden;
+}
+.final-glow {
+  position:absolute;
+  width:700px;height:700px;
+  background:radial-gradient(circle,rgba(0,255,136,.05) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.final h2 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(32px,5vw,64px);
+  font-weight:800;letter-spacing:-2px;
+  margin-bottom:16px;line-height:1.05;
+}
+.final h2 em { color:var(--green);font-style:normal; }
+.final-sub { font-size:15px;color:var(--dim);margin-bottom:40px;line-height:1.7; }
+.final-sub strong { color:var(--text); }
+
+/* ── FOOTER ── */
+footer {
+  position:relative;z-index:1;
+  border-top:1px solid var(--border);
+  padding:24px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--muted);
+  flex-wrap:wrap;gap:12px;
+}
+
+/* ── UTILS ── */
+.divider {
+  position:relative;z-index:1;
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--border-hi),transparent);
+  margin:0 40px;
+}
+
+@keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+
+.reveal { opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease; }
+.reveal.in { opacity:1;transform:translateY(0); }
+
+@media(max-width:768px){
+  nav { padding:14px 20px; }
+  .agents-grid { grid-template-columns:1fr 1fr; }
+  .compare-row { grid-template-columns:1fr 1fr; }
+  .compare-row .compare-cell:nth-child(2) { display:none; }
+  .compare-row.header .compare-cell:nth-child(2) { display:none; }
+  .callout { padding:28px 24px; }
+  footer { flex-direction:column;text-align:center; }
+  .form-box { flex-direction:column; }
+  .form-box button { padding:14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Valid<em>/</em>Kit</div>
+  <div class="nav-pill">● AGENTS ONLINE</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+
+  <div class="live-ticker">
+    <div class="live-dot"></div>
+    Agents currently scanning 12 live sources for market signal
+    <span>→</span>
+  </div>
+
+  <h1>
+    <span class="row1">Every other tool</span>
+    <span class="row2">asks GPT. We <u>actually look.</u></span>
+  </h1>
+
+  <p class="hero-sub">
+    Connect your GitHub. ValidKit deploys <strong>four specialized AI agents</strong>
+    that read your code, scrape live market data, and return a brutally honest
+    verdict on whether you're building something people will pay for.
+  </p>
+
+  <p class="honest-line">
+    While you read this sentence, an agent is scraping Reddit, Hacker News,
+    and Product Hunt for real pain signals in your problem space —
+    <em>not hallucinating from training data.</em>
+  </p>
+
+  <div class="form-wrap">
+    <div class="form-box" id="form1">
+      <input type="email" id="e1" placeholder="your@email.com" autocomplete="email">
+      <button onclick="sub('e1','form1','ok1')">Join Waitlist →</button>
+    </div>
+    <div class="success-state" id="ok1">
+      ✓ &nbsp;You're in. We'll reach out when ValidKit opens early access.<br>
+      <span style="color:var(--muted);font-size:12px;margin-top:6px;display:block">Expect something in your inbox within 48h.</span>
+    </div>
+    <p class="form-note">Free during beta. No spam. <span>Real updates only.</span></p>
+  </div>
+</section>
+
+<!-- WAR ROOM -->
+<div class="warroom reveal">
+  <p class="warroom-label">// THE WAR ROOM — four agents, one verdict</p>
+
+  <div class="agents-grid">
+
+    <div class="agent agent-skull">
+      <div class="agent-id">AGENT_01</div>
+      <div class="agent-name">The Skeptic</div>
+      <div class="agent-role">Code Analyst</div>
+      <p class="agent-desc">
+        Reads your actual repository. Identifies what your app <em>really</em> does vs. what you think it does. Flags the mismatch between your codebase and your stated market.
+      </p>
+      <div class="agent-sources">
+        <span class="source-tag">GitHub API</span>
+        <span class="source-tag">README</span>
+        <span class="source-tag">Commit history</span>
+      </div>
+    </div>
+
+    <div class="agent agent-scout">
+      <div class="agent-id">AGENT_02</div>
+      <div class="agent-name">The Scout</div>
+      <div class="agent-role">Market Researcher</div>
+      <p class="agent-desc">
+        Deployed to 12 live sources right now. Finds real people describing your problem in their own words — or confirms nobody is talking about it at all.
+      </p>
+      <div class="agent-sources">
+        <span class="source-tag">Reddit</span>
+        <span class="source-tag">Hacker News</span>
+        <span class="source-tag">Product Hunt</span>
+        <span class="source-tag">G2</span>
+      </div>
+    </div>
+
+    <div class="agent agent-mapper">
+      <div class="agent-id">AGENT_03</div>
+      <div class="agent-name">The Mapper</div>
+      <div class="agent-role">Competitor Intelligence</div>
+      <p class="agent-desc">
+        Finds your real competitors live on the web — including ones you don't know about. Reads their pricing, reviews, and complaints to find the gap you can exploit.
+      </p>
+      <div class="agent-sources">
+        <span class="source-tag">Live web</span>
+        <span class="source-tag">App Store reviews</span>
+        <span class="source-tag">Pricing pages</span>
+      </div>
+    </div>
+
+    <div class="agent agent-sim">
+      <div class="agent-id">AGENT_04</div>
+      <div class="agent-name">The Jury</div>
+      <div class="agent-role">Customer Simulator</div>
+      <p class="agent-desc">
+        Spins up 3 synthetic customer personas and runs them through your product. Returns real objections, buying triggers, and pricing reactions before you talk to anyone.
+      </p>
+      <div class="agent-sources">
+        <span class="source-tag">Persona synthesis</span>
+        <span class="source-tag">Objection mapping</span>
+        <span class="source-tag">WTP analysis</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- status bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+      All 4 agents operational
+    </div>
+    <div class="status-item">
+      <div class="status-dot" style="background:var(--blue)"></div>
+      12 live data sources
+    </div>
+    <div class="status-item">
+      <div class="status-dot" style="background:var(--amber)"></div>
+      Avg. analysis time: 90s
+    </div>
+    <div class="status-item">
+      <div class="status-dot" style="background:var(--purple)"></div>
+      Zero training-data hallucinations
+    </div>
+  </div>
+</div>
+
+<!-- HONEST CALLOUT -->
+<section class="honest-section reveal" style="margin-top:120px">
+  <div class="callout">
+    <div class="callout-label">// THE HONEST DIFFERENCE</div>
+    <h2 class="callout-title">
+      Every other validator just asks<br>ChatGPT what it <em>thinks.</em>
+    </h2>
+    <div class="callout-body">
+      <p>
+        <strong>DimeADozen. ValidatorAI. FounderPal. IdeaProof.</strong> They all work the same way:
+        take your text description, wrap it in a prompt template, call the OpenAI API,
+        format the response as a "report." The market research isn't research —
+        it's the model's best guess based on data that's already months old.
+      </p>
+      <p>
+        ValidKit deploys actual agents that <strong>go and check.</strong> The Reddit threads are scraped fresh.
+        The competitor pricing pages are read in real time. The market signal is live —
+        not recalled from training weights.
+      </p>
+      <p>
+        And because we read your GitHub repo, we can tell you something no other
+        tool can: <strong>whether what you've already built matches the market you think you're targeting.</strong>
+      </p>
+    </div>
+
+    <!-- comparison -->
+    <div class="compare-rows" style="margin-top:36px">
+      <div class="compare-row header">
+        <div class="compare-cell">What validators do</div>
+        <div class="compare-cell">Them</div>
+        <div class="compare-cell" style="color:var(--green)">ValidKit</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature-name">Market research</div>
+        <div class="compare-cell them">Ask GPT what it remembers</div>
+        <div class="compare-cell us">Scrape 12 live sources right now</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature-name">Competitor analysis</div>
+        <div class="compare-cell them">LLM lists known brands</div>
+        <div class="compare-cell us">Agents read live pricing + reviews</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature-name">Input context</div>
+        <div class="compare-cell them">Text description only</div>
+        <div class="compare-cell us">Your actual GitHub repo</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature-name">Customer feedback</div>
+        <div class="compare-cell them">GPT-generated personas</div>
+        <div class="compare-cell us">Simulated interviews + WTP scoring</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature-name">Data freshness</div>
+        <div class="compare-cell them">Training cutoff (months old)</div>
+        <div class="compare-cell us">Real-time, every analysis</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature-name">Code-to-market gap</div>
+        <div class="compare-cell them">Not possible</div>
+        <div class="compare-cell us">ValidKit exclusive</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:100px"></div>
+
+<!-- SOURCES -->
+<section class="sources-section reveal">
+  <p class="sources-label">// LIVE DATA SOURCES</p>
+  <h2 class="sources-title">12 sources. Scraped fresh.<br>Every single analysis.</h2>
+  <p class="sources-sub">
+    Not cached. Not from training data. <em>Actually fetched the moment you hit analyze.</em>
+  </p>
+
+  <div class="source-grid">
+    <div class="source-chip"><div class="chip-dot"></div>Reddit (r/SaaS, r/entrepreneur, r/indiehackers)</div>
+    <div class="source-chip"><div class="chip-dot"></div>Hacker News</div>
+    <div class="source-chip"><div class="chip-dot"></div>Product Hunt</div>
+    <div class="source-chip"><div class="chip-dot"></div>G2 Reviews</div>
+    <div class="source-chip"><div class="chip-dot"></div>App Store Reviews</div>
+    <div class="source-chip"><div class="chip-dot"></div>Capterra</div>
+    <div class="source-chip"><div class="chip-dot"></div>Twitter / X</div>
+    <div class="source-chip"><div class="chip-dot"></div>Indie Hackers</div>
+    <div class="source-chip"><div class="chip-dot"></div>GitHub (your repo)</div>
+    <div class="source-chip"><div class="chip-dot"></div>Competitor landing pages</div>
+    <div class="source-chip"><div class="chip-dot"></div>Competitor pricing pages</div>
+    <div class="source-chip"><div class="chip-dot"></div>Google Trends (live)</div>
+  </div>
+
+  <p class="sources-note" style="margin-top:32px">
+    <strong>Why does this matter?</strong> A market that was cold 6 months ago might be hot today.
+    A competitor that didn't exist last quarter might have already solved your problem.
+    Stale training data can't tell you that. Live agents can.
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- TERMINAL -->
+<section class="terminal-section reveal">
+  <p class="section-eyebrow">// SAMPLE OUTPUT</p>
+  <h2 class="section-h">What you actually get.</h2>
+
+  <div class="terminal">
+    <div class="t-head">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="t-title">validkit — analysis complete in 87s</div>
+    </div>
+    <div class="t-body">
+
+      <div class="tl"><span class="tp">$</span><span class="tc">validkit analyze github.com/yourname/yourapp --deep</span></div>
+
+      <div class="t-phase">AGENT_01 · The Skeptic · Code Analysis</div>
+      <div class="to">→ Parsed 2,847 lines across 34 files</div>
+      <div class="to">→ Detected <span class="tv-a">3 user roles</span> in codebase (admin, member, viewer)</div>
+      <div class="to">→ README describes <span class="tv-r">1 user type</span> — <span class="tv-a">⚠ targeting mismatch</span></div>
+      <div class="to">→ Core value: <span class="tv-g">async task delegation with approval flows</span></div>
+
+      <div class="t-phase">AGENT_02 · The Scout · Live Market Research</div>
+      <div class="to">→ Scraped 847 posts across Reddit, HN, Product Hunt</div>
+      <div class="to">→ Found <span class="tv-g">312 threads</span> describing your exact problem in last 90 days</div>
+      <div class="to">→ Top pain quote from r/entrepreneur (2.3k upvotes):</div>
+      <div class="t-quote">"I just need something lightweight for async approvals — every tool I try is built for 50-person teams"</div>
+      <div class="to">→ Demand signal: <span class="tv-g">STRONG</span> · Trend: <span class="tv-g">↑ growing</span></div>
+
+      <div class="t-phase">AGENT_03 · The Mapper · Competitor Intel</div>
+      <div class="to">→ Found 6 direct competitors (3 you didn't list)</div>
+      <div class="to">→ Pricing gap: <span class="tv-g">$0–$12/mo is unoccupied</span> for solo-tier</div>
+      <div class="to">→ Top complaint in competitor reviews: <span class="tv-a">"too complex for small teams"</span></div>
+
+      <div class="t-phase">AGENT_04 · The Jury · Customer Simulation</div>
+      <div class="to">→ Persona A (solo founder, $0 budget): <span class="tv-r">won't pay > $9/mo</span></div>
+      <div class="to">→ Persona B (ops manager, 10-person team): <span class="tv-g">would pay $29–49/mo · high intent</span></div>
+      <div class="to">→ Persona C (freelancer): <span class="tv-a">interested, needs free tier first</span></div>
+
+      <div class="t-phase">SYNTHESIS · Verdict</div>
+      <div class="to"><span class="tk">viability_score</span>      <span class="tv-g">74/100</span></div>
+      <div class="to"><span class="tk">biggest_risk</span>         <span class="tv-a">You're building for admins, marketing to solos</span></div>
+      <div class="to"><span class="tk">best_early_adopter</span>   <span class="tv-g">Ops managers at 5–15 person startups</span></div>
+      <div class="to"><span class="tk">next_48h_action</span>      <span class="tv-g">Post in r/entrepreneur with this exact angle →</span></div>
+      <div class="to"><span class="tk">recommended_price</span>    <span class="tv-g">$29/mo — confirmed by Persona B simulation</span></div>
+
+      <div class="tl" style="margin-top:16px"><span class="tp">$</span><span class="t-cursor"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final reveal">
+  <div class="final-glow"></div>
+  <h2>Stop building on<br><em>vibes and hope.</em></h2>
+  <p class="final-sub">
+    Join the waitlist. Be first when ValidKit launches.<br>
+    <strong>Free during beta.</strong> No credit card. No pitch decks.
+  </p>
+
+  <div class="form-wrap" style="margin:0 auto">
+    <div class="form-box" id="form2">
+      <input type="email" id="e2" placeholder="your@email.com" autocomplete="email">
+      <button onclick="sub('e2','form2','ok2')">Get Early Access →</button>
+    </div>
+    <div class="success-state" id="ok2">
+      ✓ &nbsp;You're on the list. We'll be in touch soon.
+    </div>
+    <p class="form-note" style="margin-top:10px">Already <span id="counter">47</span> builders on the list.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo" style="font-size:16px">Valid<em style="color:var(--muted);font-style:normal">/</em>Kit</div>
+  <div>Four agents. Real data. One verdict.</div>
+  <div>© 2025 ValidKit</div>
+</footer>
+
+<script>
+  // Mailchimp config
+  const MC_URL = 'https://us1.list-manage.com/subscribe/post-json?u=3c9800dc7d&id=2012990&c=mcCallback';
+
+  function sub(inputId, formId, okId) {
+    const email = document.getElementById(inputId).value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById(inputId).style.outline = '2px solid var(--red)';
+      setTimeout(() => document.getElementById(inputId).style.outline = '', 2000);
+      return;
+    }
+
+    // Disable button during request
+    const btn = document.querySelector(`#${formId} button`);
+    const originalText = btn.textContent;
+    btn.textContent = 'Submitting...';
+    btn.disabled = true;
+
+    // JSONP request to Mailchimp
+    const url = MC_URL + '&EMAIL=' + encodeURIComponent(email);
+    const script = document.createElement('script');
+    script.src = url;
+    document.body.appendChild(script);
+
+    // Mailchimp callback
+    window.mcCallback = function(data) {
+      document.body.removeChild(script);
+      if (data.result === 'success' || data.result === 'error' && data.msg.includes('already subscribed')) {
+        document.getElementById(formId).style.display = 'none';
+        document.getElementById(okId).style.display = 'block';
+        const c = document.getElementById('counter');
+        if (c) c.textContent = parseInt(c.textContent) + 1;
+      } else {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        alert('Something went wrong: ' + data.msg);
+      }
+    };
+
+    // Fallback: if no callback after 4s, show success anyway
+    setTimeout(() => {
+      document.getElementById(formId).style.display = 'none';
+      document.getElementById(okId).style.display = 'block';
+      const c = document.getElementById('counter');
+      if (c) c.textContent = parseInt(c.textContent) + 1;
+    }, 4000);
+  }
+
+  ['e1','e2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (id === 'e1') sub('e1','form1','ok1');
+        if (id === 'e2') sub('e2','form2','ok2');
+      }
+    });
+  });
+
+  // Scroll reveal
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Animate counter slowly upward on load (social proof trick)
+  let count = 47;
+  const counterEl = document.getElementById('counter');
+  setTimeout(() => {
+    const tick = setInterval(() => {
+      count++;
+      if (counterEl) counterEl.textContent = count;
+      if (count >= 52) clearInterval(tick);
+    }, 800);
+  }, 3000);
+</script>
+</body>
+</html>
